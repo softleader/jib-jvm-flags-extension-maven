@@ -5,7 +5,7 @@
   <groupId>tw.com.softleader.cloud.tools</groupId>
   <artifactId>jib-jvm-flags-extension-maven</artifactId>
   <version>1.0.0</version>
-  <name>Jvm Flags Extension for Jib Maven Plugin</name>
+  <name>JVM Flags Extension for Jib Maven Plugin</name>
   <description>Write JVM Flags to file</description>
 
   <url>https://github.com/softleader/jib-jvm-flags-extension-maven</url>
