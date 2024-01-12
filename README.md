@@ -1,6 +1,6 @@
 # Jib JVM Flags extension
 
-A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the contents of the configured `jvmFlags` into `/app/jib-jvm-flags-file` file, allowing custom `entrypoint` to still access the `jvmFlags`
+A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the contents of the configured `jvmFlags` into `/app/jib-jvm-flags-file` file, allowing [custom entrypoint](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin#custom-container-entrypoint) to still access the `jvmFlags`
 
 > **Requires Java 11 or newer**
 
