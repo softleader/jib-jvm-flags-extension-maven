@@ -1,0 +1,54 @@
+bin/app.pid
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+pom.xml.versionsBackup
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+
+### Mac ###
+.DS_Store
+
+### Project ###
+**/bin/
+
+### P6Spy ###
+spy.log
+
+### Initializr Web UI ###
+**/web-ui/public/
+**/web-ui/node_modules/
+**/web-ui/node/
+**/web-ui/.env
+**/web-ui/.cache/
+**/web-ui/package-lock.json
+**/web-ui/yarn-error.log
+**/web-ui/analysis
+.m2
+*.orig
+# draw.io temp file
+*.dtmp
