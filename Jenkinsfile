@@ -1,14 +1,11 @@
 #!/usr/bin/env groovy
 
-def java17_springBootVersions = ['3.0.13', '3.1.6'] // 只需要放 "非最新" 的中版號的最後一版
-def java21_springBootVersions = [] // 只需要放 "非最新" 的中版號的最後一版
-
 pipeline {
   agent {
     kubernetes {
       cloud 'SLKE'
       workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: 'workspace-claim', readOnly: false)
-      defaultContainer 'maven-java17'
+      defaultContainer 'maven'
       yaml """
 kind: Pod
 spec:
@@ -16,20 +13,8 @@ spec:
   securityContext:
     runAsUser: 0
   containers:
-  - name: maven-java17
-    image: harbor.softleader.com.tw/library/maven:3-eclipse-temurin-17
-    imagePullPolicy: Always
-    command: ['cat']
-    tty: true
-    resources:
-      limits:
-        memory: "1Gi"
-        cpu: "2"
-    volumeMounts:
-    - name: m2
-      mountPath: /root/.m2
-  - name: maven-java21
-    image: harbor.softleader.com.tw/library/maven:3-eclipse-temurin-21
+  - name: maven
+    image: harbor.softleader.com.tw/library/maven:3-eclipse-temurin-11
     imagePullPolicy: Always
     command: ['cat']
     tty: true
@@ -104,39 +89,6 @@ spec:
       post {
         always {
           junit "**/target/surefire-reports/**/*.xml"
-        }
-      }
-    }
-
-    // 執行當前 pom.xml 以外，還支援的 java, spring 版本的交叉測試
-    stage('Java 17 Testing') {
-      steps {
-        script {
-            for (int s = 0; s < java17_springBootVersions.size(); s++) {
-              def java = 17
-              def springboot = java17_springBootVersions[s]
-              stage("JAVA = ${java}, SPRING_BOOT = ${springboot}"){
-                container("maven-java${java}") {
-                  sh "make test JAVA=${java} SPRING_BOOT=${springboot}"
-                }
-              }
-            }
-        }
-      }
-    }
-
-    stage('Java 21 Testing') {
-      steps {
-        script {
-            for (int s = 0; s < java21_springBootVersions.size(); s++) {
-              def java = 21
-              def springboot = java21_springBootVersions[s]
-              stage("JAVA = ${java}, SPRING_BOOT = ${springboot}"){
-                container("maven-java${java}") {
-                  sh "make test JAVA=${java} SPRING_BOOT=${springboot}"
-                }
-              }
-            }
         }
       }
     }
