@@ -45,10 +45,14 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
-public class JvmFlagsCalculatorExtension implements JibMavenPluginExtension<Void> {
+public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
 
   public static final String LAYER_TYPE_JVM_FLAGS = "jvm flags";
   public static final String JIB_JVM_FLAGS_FILE = "jib-jvm-flags-file";
+  public static final String PROPERTY_SKIP_IF_EMPTY = "skipIfEmpty";
+  public static final String DEFAULT_SKIP_IF_EMPTY = "false";
+  public static final String PROPERTY_SEPARATOR = "delimiter";
+  public static final String DEFAULT_SEPARATOR = " ";
 
   private AbsoluteUnixPath appRoot = AbsoluteUnixPath.get("/app");
   private List<String> jvmFlags = Collections.emptyList();
@@ -69,7 +73,8 @@ public class JvmFlagsCalculatorExtension implements JibMavenPluginExtension<Void
     try {
       logger.log(LogLevel.LIFECYCLE, "Running JVM Flags Jib extension");
       readJibConfigurations(mavenData.getMavenProject());
-      if (jvmFlags.isEmpty() && parseBoolean(properties.getOrDefault("skipIfEmpty", "false"))) {
+      if (jvmFlags.isEmpty()
+          && parseBoolean(properties.getOrDefault(PROPERTY_SKIP_IF_EMPTY, DEFAULT_SKIP_IF_EMPTY))) {
         logger.log(LogLevel.LIFECYCLE, "No jvmFlags are configured, skipping");
         return buildPlan;
       }
@@ -77,7 +82,11 @@ public class JvmFlagsCalculatorExtension implements JibMavenPluginExtension<Void
       logger.log(
           LogLevel.LIFECYCLE,
           format("Adding layer containing '%s' file to the image", file.toString()));
-      LayerObject layer = createFileLayer(LAYER_TYPE_JVM_FLAGS, file, join(jvmFlags, " "));
+      LayerObject layer =
+          createFileLayer(
+              LAYER_TYPE_JVM_FLAGS,
+              file,
+              join(jvmFlags, properties.getOrDefault(PROPERTY_SEPARATOR, DEFAULT_SEPARATOR)));
       return buildPlan.toBuilder().addLayer(layer).build();
     } catch (IOException ex) {
       throw new JibPluginExtensionException(getClass(), verifyNotNull(ex.getMessage()), ex);

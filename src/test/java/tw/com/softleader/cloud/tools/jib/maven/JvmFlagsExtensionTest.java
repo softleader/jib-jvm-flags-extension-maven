@@ -21,7 +21,7 @@
 package tw.com.softleader.cloud.tools.jib.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tw.com.softleader.cloud.tools.jib.maven.JvmFlagsCalculatorExtension.createFileLayer;
+import static tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension.createFileLayer;
 
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
@@ -31,7 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 
-class JvmFlagsCalculatorExtensionTest {
+class JvmFlagsExtensionTest {
 
   @Test
   void testCreateFileLayer() throws IOException {

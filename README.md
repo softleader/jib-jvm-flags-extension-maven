@@ -1,12 +1,13 @@
 # Jib JVM Flags extension
 
-A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the contents of the configured `jvmFlags` into a file, allowing custom `entrypoint` to still access the `jvmFlags`
+A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the contents of the configured `jvmFlags` into `/app/jib-jvm-flags-file` file, allowing custom `entrypoint` to still access the `jvmFlags`
 
 > **Requires Java 11 or newer**
 
 ## Examples
 
 ```xml
+
 <plugin>
   <groupId>com.google.cloud.tools</groupId>
   <artifactId>jib-maven-plugin</artifactId>
@@ -15,10 +16,12 @@ A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the 
     ...
     <pluginExtensions>
       <pluginExtension>
-        <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsCalculatorExtension</implementation>
+        <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
         <properties>
-          <!-- skip if no jvmFlags specified, Default: false -->
-          <skipIfEmpty>true</skipIfEmpty>
+          <!-- Skip if no jvmFlags specified, Default: false -->
+          <skipIfEmpty>false</skipIfEmpty>
+          <!-- Separator character to join jvmFlags, Default: " " (space) -->
+          <separator> </separator>
         </properties>
       </pluginExtension>
     </pluginExtensions>
