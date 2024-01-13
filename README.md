@@ -24,9 +24,9 @@ A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the 
         <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
         <properties>
           <!-- Skip if no jvmFlags specified, Default: false -->
-          <skipIfEmpty>false</skipIfEmpty>
+          <skipIfEmpty>true</skipIfEmpty>
           <!-- Separator character to join jvmFlags, Default: " " (space) -->
-          <separator> </separator>
+          <separator>,</separator>
         </properties>
       </pluginExtension>
     </pluginExtensions>

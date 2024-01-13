@@ -21,6 +21,7 @@
 package tw.com.softleader.cloud.tools.jib.maven;
 
 import static com.google.common.base.Verify.verifyNotNull;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.join;
@@ -47,11 +48,11 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
 
-  public static final String LAYER_TYPE_JVM_FLAGS = "jvm flags";
+  public static final String LAYER_JVM_FLAGS = "jvm flags";
   public static final String JIB_JVM_FLAGS_FILE = "jib-jvm-flags-file";
   public static final String PROPERTY_SKIP_IF_EMPTY = "skipIfEmpty";
-  public static final String DEFAULT_SKIP_IF_EMPTY = "false";
-  public static final String PROPERTY_SEPARATOR = "delimiter";
+  public static final String DEFAULT_SKIP_IF_EMPTY = FALSE.toString();
+  public static final String PROPERTY_SEPARATOR = "separator";
   public static final String DEFAULT_SEPARATOR = " ";
 
   private AbsoluteUnixPath appRoot = AbsoluteUnixPath.get("/app");
@@ -84,7 +85,7 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
           format("Adding layer containing '%s' file to the image", file.toString()));
       LayerObject layer =
           createFileLayer(
-              LAYER_TYPE_JVM_FLAGS,
+              LAYER_JVM_FLAGS,
               file,
               join(jvmFlags, properties.getOrDefault(PROPERTY_SEPARATOR, DEFAULT_SEPARATOR)));
       return buildPlan.toBuilder().addLayer(layer).build();
