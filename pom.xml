@@ -117,8 +117,6 @@
         <configuration>
           <executable>${java.version}</executable>
           <encoding>${project.build.sourceEncoding}</encoding>
-          <source>8</source>
-          <target>8</target>
         </configuration>
       </plugin>
       <plugin>
