@@ -25,8 +25,8 @@ A [Jib](https://github.com/GoogleContainerTools/jib) extension that outputs the 
         <properties>
           <!-- Skip if no jvmFlags specified, Default: false -->
           <skipIfEmpty>true</skipIfEmpty>
-          <!-- Separator character to join jvmFlags, Default: " " (space) -->
-          <separator>,</separator>
+          <!-- A character that is used to separate each of the jvmFlags in the resulting String, Default: " " (space) -->
+          <delimiter>,</delimiter>
         </properties>
       </pluginExtension>
     </pluginExtensions>
