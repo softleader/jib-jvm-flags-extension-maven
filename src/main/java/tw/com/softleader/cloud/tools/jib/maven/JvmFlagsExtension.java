@@ -49,6 +49,11 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+/**
+ * Jvm flag extension for Jib.
+ *
+ * @author Matt Ho
+ */
 public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
 
   public static final String CACHE_DIRECTORY_NAME = "jib-cache";
@@ -104,6 +109,7 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
    * @param jvmFlags jvm flags 內容
    * @param pathInContainer 要寫到 image 中檔案的路徑
    */
+  @VisibleForTesting
   static FileEntriesLayer createJvmFlagsFilesLayer(
       Path sourceDirectory, String jvmFlags, AbsoluteUnixPath pathInContainer) throws IOException {
     Path file = sourceDirectory.resolve(JIB_JVM_FLAGS_FILE);
