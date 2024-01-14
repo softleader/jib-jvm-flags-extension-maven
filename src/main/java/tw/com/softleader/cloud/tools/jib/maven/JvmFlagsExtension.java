@@ -24,7 +24,9 @@ import static com.google.common.base.Verify.verifyNotNull;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.join;
+import static java.lang.String.join;
+import static java.lang.System.getProperty;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.ContainerBuildPlan;
@@ -37,26 +39,29 @@ import com.google.cloud.tools.jib.plugins.extension.ExtensionLogger.LogLevel;
 import com.google.cloud.tools.jib.plugins.extension.JibPluginExtensionException;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
 
+  public static final String CACHE_DIRECTORY_NAME = "jib-cache";
   public static final String LAYER_JVM_FLAGS = "jvm flags";
   public static final String JIB_JVM_FLAGS_FILE = "jib-jvm-flags-file";
   public static final String PROPERTY_SKIP_IF_EMPTY = "skipIfEmpty";
   public static final String DEFAULT_SKIP_IF_EMPTY = FALSE.toString();
-  public static final String PROPERTY_SEPARATOR = "separator";
-  public static final String DEFAULT_SEPARATOR = " ";
+  public static final String PROPERTY_DELIMITER = "delimiter";
+  public static final String DEFAULT_DELIMITER = " ";
 
   private AbsoluteUnixPath appRoot = AbsoluteUnixPath.get("/app");
   private List<String> jvmFlags = Collections.emptyList();
+  private Path cacheDirectory = Paths.get(getProperty("java.io.tmpdir"), CACHE_DIRECTORY_NAME);
 
   @Override
   public Optional<Class<Void>> getExtraConfigType() {
@@ -79,30 +84,50 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
         logger.log(LogLevel.LIFECYCLE, "No jvmFlags are configured, skipping");
         return buildPlan;
       }
-      AbsoluteUnixPath file = appRoot.resolve(JIB_JVM_FLAGS_FILE);
+      AbsoluteUnixPath fileInContainer = appRoot.resolve(JIB_JVM_FLAGS_FILE);
       logger.log(
           LogLevel.LIFECYCLE,
-          format("Adding layer containing '%s' file to the image", file.toString()));
+          format("Adding layer containing '%s' file to the image", fileInContainer.toString()));
       LayerObject layer =
-          createFileLayer(
-              LAYER_JVM_FLAGS,
-              file,
-              join(jvmFlags, properties.getOrDefault(PROPERTY_SEPARATOR, DEFAULT_SEPARATOR)));
+          createJvmFlagsFilesLayer(
+              cacheDirectory,
+              join(properties.getOrDefault(PROPERTY_DELIMITER, DEFAULT_DELIMITER), jvmFlags),
+              fileInContainer);
       return buildPlan.toBuilder().addLayer(layer).build();
     } catch (IOException ex) {
       throw new JibPluginExtensionException(getClass(), verifyNotNull(ex.getMessage()), ex);
     }
   }
 
-  @VisibleForTesting
-  static FileEntriesLayer createFileLayer(String layerName, AbsoluteUnixPath path, String content)
-      throws IOException {
-    Path file = Files.createTempFile(JIB_JVM_FLAGS_FILE + "-", "");
-    Files.write(file, content.getBytes(StandardCharsets.UTF_8));
-    return FileEntriesLayer.builder().setName(layerName).addEntry(file, path).build();
+  /**
+   * @param sourceDirectory 來源目錄
+   * @param jvmFlags jvm flags 內容
+   * @param pathInContainer 要寫到 image 中檔案的路徑
+   */
+  static FileEntriesLayer createJvmFlagsFilesLayer(
+      Path sourceDirectory, String jvmFlags, AbsoluteUnixPath pathInContainer) throws IOException {
+    Path file = sourceDirectory.resolve(JIB_JVM_FLAGS_FILE);
+    writeFileConservatively(file, jvmFlags);
+    return FileEntriesLayer.builder()
+        .setName(LAYER_JVM_FLAGS)
+        .addEntry(file, pathInContainer)
+        .build();
   }
 
-  private void readJibConfigurations(MavenProject project) {
+  @VisibleForTesting
+  static void writeFileConservatively(Path file, String content) throws IOException {
+    if (Files.exists(file)) {
+      String oldContent = Files.readString(file);
+      if (oldContent.equals(content)) {
+        return;
+      }
+    }
+    Files.createDirectories(file.getParent());
+    Files.write(file, content.getBytes(UTF_8));
+  }
+
+  private void readJibConfigurations(@NonNull MavenProject project) {
+    cacheDirectory = Paths.get(project.getBuild().getDirectory(), CACHE_DIRECTORY_NAME);
     Plugin jibPlugin = project.getPlugin("com.google.cloud.tools:jib-maven-plugin");
     if (jibPlugin != null) {
       Xpp3Dom configurationDom = (Xpp3Dom) jibPlugin.getConfiguration();
