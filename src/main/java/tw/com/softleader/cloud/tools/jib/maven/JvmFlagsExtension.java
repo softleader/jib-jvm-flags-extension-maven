@@ -27,6 +27,7 @@ import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.stream;
 
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.ContainerBuildPlan;
@@ -42,9 +43,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -61,8 +66,8 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
   public static final String JIB_JVM_FLAGS_FILE = "jib-jvm-flags-file";
   public static final String PROPERTY_SKIP_IF_EMPTY = "skipIfEmpty";
   public static final String DEFAULT_SKIP_IF_EMPTY = FALSE.toString();
-  public static final String PROPERTY_DELIMITER = "delimiter";
-  public static final String DEFAULT_DELIMITER = " ";
+  public static final String PROPERTY_SEPARATOR = "separator";
+  public static final String DEFAULT_SEPARATOR = " ";
 
   private AbsoluteUnixPath appRoot = AbsoluteUnixPath.get("/app");
   private List<String> jvmFlags = Collections.emptyList();
@@ -86,18 +91,17 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
       readJibConfigurations(mavenData.getMavenProject());
       if (jvmFlags.isEmpty()
           && parseBoolean(properties.getOrDefault(PROPERTY_SKIP_IF_EMPTY, DEFAULT_SKIP_IF_EMPTY))) {
-        logger.log(LogLevel.LIFECYCLE, "No jvmFlags are configured, skipping");
+        logger.log(LogLevel.LIFECYCLE, "No JVM Flags are configured, skipping");
         return buildPlan;
       }
+      var jvmFlagsJoined =
+          join(properties.getOrDefault(PROPERTY_SEPARATOR, DEFAULT_SEPARATOR), jvmFlags);
+      logger.log(LogLevel.LIFECYCLE, format("JVM Flags set to [%s]", jvmFlagsJoined));
       AbsoluteUnixPath fileInContainer = appRoot.resolve(JIB_JVM_FLAGS_FILE);
       logger.log(
           LogLevel.LIFECYCLE,
           format("Adding layer containing '%s' file to the image", fileInContainer.toString()));
-      LayerObject layer =
-          createJvmFlagsFilesLayer(
-              cacheDirectory,
-              join(properties.getOrDefault(PROPERTY_DELIMITER, DEFAULT_DELIMITER), jvmFlags),
-              fileInContainer);
+      LayerObject layer = createJvmFlagsFilesLayer(cacheDirectory, jvmFlagsJoined, fileInContainer);
       return buildPlan.toBuilder().addLayer(layer).build();
     } catch (IOException ex) {
       throw new JibPluginExtensionException(getClass(), verifyNotNull(ex.getMessage()), ex);
@@ -147,8 +151,9 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
           Xpp3Dom jvmFlagsDom = containerDom.getChild("jvmFlags");
           if (jvmFlagsDom != null) {
             jvmFlags =
-                Arrays.asList(jvmFlagsDom.getChildren()).stream()
+                stream(jvmFlagsDom.getChildren())
                     .map(Xpp3Dom::getValue)
+                    .filter(StringUtils::isNotBlank)
                     .collect(Collectors.toList());
           }
         }
