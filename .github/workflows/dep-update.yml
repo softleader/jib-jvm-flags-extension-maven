@@ -1,4 +1,4 @@
-name: Update dependencies
+name: Update Dependencies
 
 on:
   # 手動觸發，可做用於任一 branch
@@ -13,6 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'maven'
       - name: Update dependencies
         run: make update-dependencies
       - name: Create Pull Request
