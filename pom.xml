@@ -51,19 +51,19 @@
     <skip.formatting>false</skip.formatting>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-    <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-    <spotless-maven-plugin.version>2.41.1</spotless-maven-plugin.version>
-    <license-maven-plugin.version>4.1</license-maven-plugin.version>
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+    <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
+    <license-maven-plugin.version>4.3</license-maven-plugin.version>
     <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
     <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
     <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
     <maven-source-plugin.version>3.2.0</maven-source-plugin.version>
 
     <jib-maven-plugin-extension-api.version>0.4.0</jib-maven-plugin-extension-api.version>
-    <assertj-core.version>3.11.1</assertj-core.version>
-    <junit-jupiter.version>5.9.1</junit-jupiter.version>
-    <lombok.version>1.18.30</lombok.version>
+    <assertj-core.version>3.25.3</assertj-core.version>
+    <junit-jupiter.version>5.10.2</junit-jupiter.version>
+    <lombok.version>1.18.32</lombok.version>
   </properties>
 
   <dependencies>
