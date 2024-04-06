@@ -1,4 +1,4 @@
-name: dep-update
+name: Update dependencies
 
 on:
   # 手動觸發，可做用於任一 branch
