@@ -26,7 +26,7 @@ jobs:
           title: "chore: update dependencies"
           committer: bot <bot-noreply@softleader.com.tw>
           author: bot <bot-noreply@softleader.com.tw>
-          body-patch: /tmp/dep-update.diff
+          body-path: /tmp/dep-update.diff
           labels: "dependencies-update"
           branch: "dep-update/${{ github.ref_name }}"
           delete-branch: true
