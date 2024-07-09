@@ -7,7 +7,13 @@
 
 A [Jib](https://github.com/GoogleContainerTools/jib) extension outputs the configured `jvmFlags` into the `/app/jib-jvm-flags-file` file, allowing a [custom entrypoint](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin#custom-container-entrypoint) to access these flags.
 
-When a custom entrypoint is used, Jib ignores the `jvmFlags` settings. This plugin allows the configured `jvmFlags` to still be accessed even in scenarios where a custom entrypoint is in use.
+When a custom entrypoint is used, Jib ignores the `jvmFlags` settings. This plugin allows the configured `jvmFlags` to still be accessed even in scenarios where a custom entrypoint is in use. 
+
+For example, the following commands will be able to launch your app:
+
+```
+java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file)
+```
 
 > **Requires Java 11 or newer**
 
