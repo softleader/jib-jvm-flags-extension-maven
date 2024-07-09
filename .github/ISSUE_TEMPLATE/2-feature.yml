@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest an idea for Kapok
+description: Suggest an idea
 title: "feat(idea): "
 body:
   - type: textarea
