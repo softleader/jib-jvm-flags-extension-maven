@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an idea for Kapok
+title: "feat(idea): "
+body:
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Is your feature request related to a specific problem or module? Please describe.
+      description: 您的功能請求是否與某個問題相關？或與某特定模組相關？請描述
+  - type: textarea
+    id: desired-solution
+    attributes:
+      label: Describe the solution you'd like
+      description: 請清楚而簡短明瞭的描述你希望的解決方案
+    validations:
+      required: true
+  - type: textarea
+    id: alternative-solutions
+    attributes:
+      label: Describe alternatives you've considered
+      description: 請清楚而簡短明瞭的描述你考慮過的任何替代解決方案或功能
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: 在此提供有關功能需求的其他相關內容或螢幕截圖，或是程式碼範例

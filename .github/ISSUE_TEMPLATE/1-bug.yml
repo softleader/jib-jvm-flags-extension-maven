@@ -1,0 +1,42 @@
+name: Bug report
+description: Create a bug report to help us improve
+title: "fix: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: What version are you running?
+      description: 請提供你所使用的版本
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: A clear and concise description of what the bug is.
+      description: 請清楚並簡潔的描述所遇到的錯誤
+      placeholder: 若有程式碼，請勿使用截圖，而應使用 Markdown 語法
+    validations:
+      required: true
+  - type: textarea
+    id: to-reproduce
+    attributes:
+      label: Steps to reproduce the behavior.
+      description: 請說明重現此錯誤的步驟
+      placeholder: 若有程式碼，請勿使用截圖，而應使用 Markdown 語法
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: A clear and concise description of what you expected to happen.
+      description: 請清楚並簡潔的描述你預期的行為
+      placeholder: 若有程式碼，請勿使用截圖，而應使用 Markdown 語法
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample
+      description: 請提供包含 [最小可重現範例](https://stackoverflow.com/help/minimal-reproducible-example) 的 GitHub repository 連結，**包含範例的回報將優先處理。**
+      placeholder: 我們可能會要求提供更多範例，因此建議一開始就提供完整的範例。
+        
