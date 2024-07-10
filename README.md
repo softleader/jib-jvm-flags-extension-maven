@@ -9,33 +9,31 @@ A [Jib](https://github.com/GoogleContainerTools/jib) extension outputs the confi
 
 When a custom entrypoint is used, Jib ignores the `jvmFlags` settings. This plugin allows the configured `jvmFlags` to still be accessed even in scenarios where a custom entrypoint is in use. 
 
-For example, the following commands will be able to launch your app:
+For example:
 
-```
-java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file)
-```
+- (Java 11+) `java @/app/jib-jvm-flags-file -cp @/app/jib-classpath-file @/app/jib-main-class-file`
+- (with shell) `java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file)`
 
-> **Requires Java 11 or newer**
+> Requires Java 11 or newer
 
-## Examples
+## Usage
 
 ```xml
-
 <plugin>
   <groupId>com.google.cloud.tools</groupId>
   <artifactId>jib-maven-plugin</artifactId>
-  <version>...</version>
+  <version>${jib-maven-plugin.version}</version>
   <configuration>
-    ...
+    <container>
+      <jvmFlags>
+        <jvmFlag>-XshowSettings:vm</jvmFlag>
+        <jvmFlag>-Xdebug</jvmFlag>
+      </jvmFlags>
+      <entrypoint>java,@/app/jib-jvm-flags-file,-cp,@/app/jib-classpath-file,@/app/jib-main-class-file</entrypoint>
+    </container>
     <pluginExtensions>
       <pluginExtension>
         <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
-        <properties>
-          <!-- Skip if no jvmFlags specified, Default: false -->
-          <skipIfEmpty>true</skipIfEmpty>
-          <!-- The separator character to use to join jvmFlags, Default: " " (space) --> 
-          <separator>,</separator>
-        </properties>
       </pluginExtension>
     </pluginExtensions>
   </configuration>
@@ -47,4 +45,18 @@ java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /ap
     </dependency>
   </dependencies>
 </plugin>
+```
+
+### Extension Properties 
+
+```xml
+<pluginExtension>
+  <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
+  <properties>
+    <!-- Skip if no jvmFlags specified, Default: false -->
+    <skipIfEmpty>true</skipIfEmpty>
+    <!-- The separator character to use to join jvmFlags, Default: " " (space) --> 
+    <separator>,</separator>
+  </properties>
+</pluginExtension>
 ```
