@@ -22,12 +22,12 @@ package tw.com.softleader.cloud.tools.jib.maven;
 
 import static com.google.common.base.Verify.verifyNotNull;
 import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.lang.String.join;
-import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
+import static java.util.Optional.ofNullable;
+import static java.util.function.Function.identity;
 
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.ContainerBuildPlan;
@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
@@ -65,13 +66,14 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
   public static final String LAYER_JVM_FLAGS = "jvm flags";
   public static final String JIB_JVM_FLAGS_FILE = "jib-jvm-flags-file";
   public static final String PROPERTY_SKIP_IF_EMPTY = "skipIfEmpty";
-  public static final String DEFAULT_SKIP_IF_EMPTY = FALSE.toString();
+  public static final boolean DEFAULT_SKIP_IF_EMPTY = FALSE;
   public static final String PROPERTY_SEPARATOR = "separator";
   public static final String DEFAULT_SEPARATOR = " ";
 
   private AbsoluteUnixPath appRoot = AbsoluteUnixPath.get("/app");
   private List<String> jvmFlags = Collections.emptyList();
-  private Path cacheDirectory = Paths.get(getProperty("java.io.tmpdir"), CACHE_DIRECTORY_NAME);
+  private Path cacheDirectory =
+      Paths.get(System.getProperty("java.io.tmpdir"), CACHE_DIRECTORY_NAME);
 
   @Override
   public Optional<Class<Void>> getExtraConfigType() {
@@ -89,13 +91,11 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
     try {
       logger.log(LogLevel.LIFECYCLE, "Running JVM Flags Jib extension");
       readJibConfigurations(mavenData.getMavenProject());
-      if (jvmFlags.isEmpty()
-          && parseBoolean(properties.getOrDefault(PROPERTY_SKIP_IF_EMPTY, DEFAULT_SKIP_IF_EMPTY))) {
+      if (jvmFlags.isEmpty() && skipIfEmpty(properties)) {
         logger.log(LogLevel.LIFECYCLE, "No JVM Flags are configured, skipping");
         return buildPlan;
       }
-      var jvmFlagsJoined =
-          join(properties.getOrDefault(PROPERTY_SEPARATOR, DEFAULT_SEPARATOR), jvmFlags);
+      var jvmFlagsJoined = join(separator(properties), jvmFlags);
       logger.log(LogLevel.LIFECYCLE, format("JVM Flags set to [%s]", jvmFlagsJoined));
       AbsoluteUnixPath fileInContainer = appRoot.resolve(JIB_JVM_FLAGS_FILE);
       logger.log(
@@ -106,6 +106,23 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
     } catch (IOException ex) {
       throw new JibPluginExtensionException(getClass(), verifyNotNull(ex.getMessage()), ex);
     }
+  }
+
+  private String separator(@NonNull Map<String, String> properties) {
+    return getProperty(properties, PROPERTY_SEPARATOR, identity(), DEFAULT_SEPARATOR);
+  }
+
+  private boolean skipIfEmpty(@NonNull Map<String, String> properties) {
+    return getProperty(
+        properties, PROPERTY_SKIP_IF_EMPTY, Boolean::parseBoolean, DEFAULT_SKIP_IF_EMPTY);
+  }
+
+  private <T> T getProperty(
+      @NonNull Map<String, String> properties,
+      String key,
+      Function<String, T> downstream,
+      T defaultIfNull) {
+    return ofNullable(properties.get(key)).map(downstream).orElse(defaultIfNull);
   }
 
   /**
