@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
@@ -108,16 +109,18 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
     }
   }
 
-  private String separator(@NonNull Map<String, String> properties) {
+  @VisibleForTesting
+  static String separator(@NonNull Map<String, String> properties) {
     return getProperty(properties, PROPERTY_SEPARATOR, identity(), DEFAULT_SEPARATOR);
   }
 
-  private boolean skipIfEmpty(@NonNull Map<String, String> properties) {
+  @VisibleForTesting
+  static boolean skipIfEmpty(@NonNull Map<String, String> properties) {
     return getProperty(
-        properties, PROPERTY_SKIP_IF_EMPTY, Boolean::parseBoolean, DEFAULT_SKIP_IF_EMPTY);
+        properties, PROPERTY_SKIP_IF_EMPTY, BooleanUtils::toBoolean, DEFAULT_SKIP_IF_EMPTY);
   }
 
-  private <T> T getProperty(
+  private static <T> T getProperty(
       @NonNull Map<String, String> properties,
       String key,
       Function<String, T> downstream,
