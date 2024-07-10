@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -61,5 +63,27 @@ class JvmFlagsExtensionTest {
     writeFileConservatively(file, "some content");
     String content = Files.readString(file);
     assertThat(content).isEqualTo("some content");
+  }
+
+  @Test
+  void testSkipIfEmpty() {
+    assertThat(skipIfEmpty(Map.of())).isEqualTo(DEFAULT_SKIP_IF_EMPTY);
+    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "true"))).isTrue();
+    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "false"))).isFalse();
+    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "yes"))).isTrue();
+    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "invalid")))
+        .isEqualTo(DEFAULT_SKIP_IF_EMPTY);
+    var properties = new HashMap<String, String>();
+    properties.put(PROPERTY_SKIP_IF_EMPTY, null);
+    assertThat(skipIfEmpty(properties)).isEqualTo(DEFAULT_SKIP_IF_EMPTY);
+  }
+
+  @Test
+  void testSeparator() {
+    assertThat(separator(Map.of())).isEqualTo(DEFAULT_SEPARATOR);
+    assertThat(separator(Map.of(PROPERTY_SEPARATOR, ", "))).isEqualTo(", ");
+    var properties = new HashMap<String, String>();
+    properties.put(PROPERTY_SEPARATOR, null);
+    assertThat(separator(properties)).isEqualTo(DEFAULT_SEPARATOR);
   }
 }
