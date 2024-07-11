@@ -3,20 +3,26 @@
 ![GitHub tag checks state](https://img.shields.io/github/checks-status/softleader/jib-jvm-flags-extension-maven/main)
 ![GitHub issues](https://img.shields.io/github/issues-raw/softleader/jib-jvm-flags-extension-maven)
 
-# Jib JVM Flags extension
+# Jib JVM Flags Extension
 
-A [Jib](https://github.com/GoogleContainerTools/jib) [extension](https://github.com/GoogleContainerTools/jib-extensions) outputs the configured `jvmFlags` into the `/app/jib-jvm-flags-file` file, allowing a [custom entrypoint](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin#custom-container-entrypoint) to access these flags.
+A [Jib](https://github.com/GoogleContainerTools/jib) [maven extension](https://github.com/GoogleContainerTools/jib-extensions) outputs the configured `jvmFlags` into the `/app/jib-jvm-flags-file` file, allowing a [custom entrypoint](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin#custom-container-entrypoint) to access these flags.
 
-When a custom entrypoint is used, Jib ignores the `jvmFlags` settings. This plugin allows the configured `jvmFlags` to still be accessed even in scenarios where a custom entrypoint is in use. 
+When a custom entrypoint is used, Jib ignores the `jvmFlags` settings. This extension ensures that the configured `jvmFlags` are accessible even in such scenarios:
 
-For example:
+- For Java 11+:
+  ```sh
+  java @/app/jib-jvm-flags-file -cp @/app/jib-classpath-file @/app/jib-main-class-file
+  ```
+- With shell:
+  ```sh
+  java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file)
+  ```
 
-- (Java 11+) `java @/app/jib-jvm-flags-file -cp @/app/jib-classpath-file @/app/jib-main-class-file`
-- (with shell) `java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file)`
-
-> Requires Java 11 or newer
+> **Note:** Requires Java 11 or newer
 
 ## Usage
+
+To use the Jib JVM Flags extension in your project, configure the `jib-maven-plugin` as follows:
 
 ```xml
 <plugin>
@@ -24,13 +30,6 @@ For example:
   <artifactId>jib-maven-plugin</artifactId>
   <version>${jib-maven-plugin.version}</version>
   <configuration>
-    <container>
-      <jvmFlags>
-        <jvmFlag>-XshowSettings:vm</jvmFlag>
-        <jvmFlag>-Xdebug</jvmFlag>
-      </jvmFlags>
-      <entrypoint>java,@/app/jib-jvm-flags-file,-cp,@/app/jib-classpath-file,@/app/jib-main-class-file</entrypoint>
-    </container>
     <pluginExtensions>
       <pluginExtension>
         <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
@@ -47,7 +46,71 @@ For example:
 </plugin>
 ```
 
+### Customizing Entrypoint with Java Command
+
+To customize the entrypoint using a direct Java command, for example:
+
+```xml
+<configuration>
+  <container>
+    <jvmFlags>
+      <jvmFlag>-XshowSettings:vm</jvmFlag>
+      <jvmFlag>-Xdebug</jvmFlag>
+    </jvmFlags>
+    <entrypoint>java,@/app/jib-jvm-flags-file,-cp,@/app/jib-classpath-file,@/app/jib-main-class-file</entrypoint>
+  </container>
+  <pluginExtensions>
+    <pluginExtension>
+      <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
+    </pluginExtension>
+  </pluginExtensions>
+</configuration>
+```
+
+### Customizing Entrypoint Using a Shell Script
+
+You can also use a shell script to launch your app:
+
+```sh
+#!/bin/bash
+set -e
+
+# Perform any necessary steps before starting the JVM, such as calculating and setting JVM options
+export JAVA_TOOL_OPTIONS="-Xmx1g"
+
+exec java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file) "$@"
+```
+
+And then configure the plugin to use this script:
+
+```xml
+<configuration>
+  <container>
+    <jvmFlags>
+      <jvmFlag>-XshowSettings:vm</jvmFlag>
+      <jvmFlag>-Xdebug</jvmFlag>
+    </jvmFlags>
+    <entrypoint>sh,/entrypoint.sh</entrypoint>
+  </container>
+  <extraDirectories>
+    <paths>
+      <path>
+        <from>.</from>
+        <includes>entrypoint.sh</includes>
+      </path>
+    </paths>
+  </extraDirectories>
+  <pluginExtensions>
+    <pluginExtension>
+      <implementation>tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension</implementation>
+    </pluginExtension>
+  </pluginExtensions>
+</configuration>
+```
+
 ### Extension Properties 
+
+You can further customize the extension with the following properties:
 
 ```xml
 <pluginExtension>
