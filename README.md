@@ -75,10 +75,14 @@ You can also use a shell script to launch your app:
 #!/bin/bash
 set -e
 
-# Perform any necessary steps before starting the JVM, such as calculating and setting JVM options
+# Perform any necessary steps before starting the JVM,
+# such as setting JVM options or preparing the environment
 export JAVA_TOOL_OPTIONS="-Xmx1g"
 
-exec java $(cat /app/jib-jvm-flags-file) -cp $(cat /app/jib-classpath-file) $(cat /app/jib-main-class-file) "$@"
+exec java $(cat /app/jib-jvm-flags-file) \
+  -cp $(cat /app/jib-classpath-file) \
+  $(cat /app/jib-main-class-file) \
+  "$@"
 ```
 
 And then configure the plugin to use this script:
