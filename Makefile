@@ -20,7 +20,7 @@ test: clean ## Clean and test the compiled code.
 install: clean ## Install project to local repository w/o unit testing.
 	mvn install -e -DskipTests -Prelease
 
-update-dependencies: ## Update dependencies to the latest version (excluding maven plugin).
+bump-deps: ## Bump dependencies to the latest version (excluding maven plugin).
 	mvn versions:update-properties -DexcludeProperties=*plugin.version
 	mvn versions:commit
 
