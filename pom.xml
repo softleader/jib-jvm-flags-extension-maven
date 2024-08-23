@@ -6,7 +6,7 @@
   <artifactId>jib-jvm-flags-extension-maven</artifactId>
   <version>1.0.5</version>
   <name>JVM Flags Extension for Jib Maven Plugin</name>
-  <description>Write JVM Flags to file</description>
+  <description>A Jib maven extension outputs the configured jvmFlags to file, allowing a custom entrypoint to access these flags.</description>
 
   <url>https://github.com/softleader/jib-jvm-flags-extension-maven</url>
   <inceptionYear>2024</inceptionYear>
