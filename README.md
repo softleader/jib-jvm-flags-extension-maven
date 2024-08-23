@@ -124,6 +124,10 @@ You can further customize the extension with the following properties:
     <skipIfEmpty>true</skipIfEmpty>
     <!-- The separator character to use to join jvmFlags, Default: " " (space) --> 
     <separator>,</separator>
+    <!-- Set the output file name in container, Default: jib-jvm-flags-file --> 
+    <filename>my-jvm-flags-file</filename>
+    <!-- Set the output file permissions in container, Default: 644 --> 
+    <mode>666</mode>
   </properties>
 </pluginExtension>
 ```

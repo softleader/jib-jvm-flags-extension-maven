@@ -48,21 +48,24 @@
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
+    <maven.version.ignore>(?i).*(?:-|\.)(alpha|beta|m|rc|cr)(-?\d+)?$</maven.version.ignore>
     <skip.formatting>false</skip.formatting>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-    <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.4.0</maven-surefire-plugin.version>
     <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
-    <license-maven-plugin.version>4.3</license-maven-plugin.version>
+    <license-maven-plugin.version>4.5</license-maven-plugin.version>
     <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
     <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
     <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
     <maven-source-plugin.version>3.2.0</maven-source-plugin.version>
 
     <jib-maven-plugin-extension-api.version>0.4.0</jib-maven-plugin-extension-api.version>
-    <assertj-core.version>3.26.0</assertj-core.version>
-    <junit-jupiter.version>5.11.0-M2</junit-jupiter.version>
+    <assertj-core.version>3.26.3</assertj-core.version>
+    <junit-jupiter.version>5.11.0</junit-jupiter.version>
+    <mockito.version>5.12.0</mockito.version>
+    <mockito-inline.version>5.2.0</mockito-inline.version>
     <lombok.version>1.18.34</lombok.version>
   </properties>
 
@@ -92,21 +95,19 @@
       <version>${assertj-core.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>${mockito-inline.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-
-  <repositories>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>spring-milestones</id>
-      <url>https://repo.spring.io/milestone</url>
-    </repository>
-    <repository>
-      <id>spring-release</id>
-      <url>https://repo.spring.io/release</url>
-    </repository>
-  </repositories>
 
   <build>
     <plugins>

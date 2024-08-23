@@ -21,69 +21,150 @@
 package tw.com.softleader.cloud.tools.jib.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static tw.com.softleader.cloud.tools.jib.maven.JvmFlagsExtension.*;
 
-import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
+import com.google.cloud.tools.jib.api.buildplan.ContainerBuildPlan;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
-import com.google.cloud.tools.jib.api.buildplan.FileEntry;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import com.google.cloud.tools.jib.api.buildplan.LayerObject;
+import com.google.cloud.tools.jib.maven.extension.MavenData;
+import com.google.cloud.tools.jib.plugins.extension.ExtensionLogger;
+import com.google.cloud.tools.jib.plugins.extension.JibPluginExtensionException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 class JvmFlagsExtensionTest {
+  @Mock private MavenData mavenData;
 
-  @Test
-  void testAddJvmArgFilesLayer(@TempDir Path tempDir) throws IOException {
-    String jvmFlags = "-server -XshowSettings:vm";
-    FileEntriesLayer layer =
-        createJvmFlagsFilesLayer(tempDir, jvmFlags, AbsoluteUnixPath.get("/app"));
+  @Mock private MavenProject mavenProject;
 
-    Path jvmFlagsFile = tempDir.resolve(JIB_JVM_FLAGS_FILE);
-    String jvmFlagsRead = Files.readString(jvmFlagsFile);
+  @Mock private Build build;
 
-    assertThat(jvmFlagsRead).isEqualTo(jvmFlags);
-    assertThat(layer.getName()).isEqualTo(LAYER_JVM_FLAGS);
-    assertThat(layer.getEntries()).hasSize(1);
-    FileEntry file = layer.getEntries().get(0);
-    assertThat(file.getSourceFile()).isNotNull();
-    assertThat(Files.readAllLines(file.getSourceFile(), StandardCharsets.UTF_8))
-        .hasSize(1)
-        .first()
-        .isEqualTo(jvmFlags);
+  @Mock private ExtensionLogger logger;
+
+  private JvmFlagsExtension extension;
+
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+    extension = new JvmFlagsExtension();
+    when(mavenData.getMavenProject()).thenReturn(mavenProject);
+    when(mavenProject.getBuild()).thenReturn(build);
   }
 
   @Test
-  void testWriteFileConservatively(@TempDir Path tempDir) throws IOException {
-    Path file = tempDir.resolve("file.txt");
-    writeFileConservatively(file, "some content");
-    String content = Files.readString(file);
-    assertThat(content).isEqualTo("some content");
+  void testExtendContainerBuildPlanWithNoJvmFlags(@TempDir Path tempDir)
+      throws JibPluginExtensionException {
+    when(mavenProject.getBuild().getDirectory()).thenReturn(tempDir.toString());
+    when(mavenProject.getPlugin("com.google.cloud.tools:jib-maven-plugin")).thenReturn(null);
+
+    ContainerBuildPlan originalPlan = ContainerBuildPlan.builder().build();
+    ContainerBuildPlan modifiedPlan =
+        extension.extendContainerBuildPlan(
+            originalPlan,
+            Map.of(JvmFlagsExtension.PROPERTY_SKIP_IF_EMPTY, "true"),
+            Optional.empty(),
+            mavenData,
+            logger);
+
+    assertThat(originalPlan).isEqualTo(modifiedPlan);
   }
 
   @Test
-  void testSkipIfEmpty() {
-    assertThat(skipIfEmpty(Map.of())).isEqualTo(DEFAULT_SKIP_IF_EMPTY);
-    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "true"))).isTrue();
-    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "false"))).isFalse();
-    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "yes"))).isTrue();
-    assertThat(skipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "invalid")))
+  void testExtendContainerBuildPlanWithJvmFlags(@TempDir Path tempDir)
+      throws JibPluginExtensionException {
+    when(mavenProject.getBuild().getDirectory()).thenReturn(tempDir.toString());
+    Plugin jibPlugin = mock(Plugin.class);
+    when(mavenProject.getPlugin(JIB_MAVEN_PLUGIN_ID)).thenReturn(jibPlugin);
+
+    Xpp3Dom configurationDom = new Xpp3Dom("configuration");
+    Xpp3Dom containerDom = new Xpp3Dom("container");
+    Xpp3Dom jvmFlagsDom = new Xpp3Dom("jvmFlags");
+    Xpp3Dom flag1 = new Xpp3Dom("jvmFlag");
+    flag1.setValue("-Xmx512m");
+    Xpp3Dom flag2 = new Xpp3Dom("jvmFlag");
+    flag2.setValue("-Djava.security.egd=file:/dev/./urandom");
+
+    jvmFlagsDom.addChild(flag1);
+    jvmFlagsDom.addChild(flag2);
+    containerDom.addChild(jvmFlagsDom);
+    configurationDom.addChild(containerDom);
+
+    when(jibPlugin.getConfiguration()).thenReturn(configurationDom);
+
+    ContainerBuildPlan originalPlan = ContainerBuildPlan.builder().build();
+    ContainerBuildPlan modifiedPlan =
+        extension.extendContainerBuildPlan(
+            originalPlan, Map.of(), Optional.empty(), mavenData, logger);
+
+    assertThat(originalPlan).isNotEqualTo(modifiedPlan);
+    List<? extends LayerObject> layers = modifiedPlan.getLayers();
+    assertThat(layers).hasSize(1);
+
+    FileEntriesLayer layer = (FileEntriesLayer) layers.get(0);
+    assertThat(JvmFlagsLayerPlan.LAYER_JVM_FLAGS).isEqualTo(layer.getName());
+  }
+
+  @Test
+  void testSkipIfEmptyWithEmptyProperties() {
+    assertThat(isSkipIfEmpty(Map.of())).isSameAs(DEFAULT_SKIP_IF_EMPTY);
+  }
+
+  @Test
+  void testSkipIfEmptyWithTrueValue() {
+    assertThat(isSkipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "true"))).isTrue();
+  }
+
+  @Test
+  void testSkipIfEmptyWithFalseValue() {
+    assertThat(isSkipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "false"))).isFalse();
+  }
+
+  @Test
+  void testSkipIfEmptyWithYesValue() {
+    assertThat(isSkipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "yes"))).isTrue();
+  }
+
+  @Test
+  void testSkipIfEmptyWithInvalidValue() {
+    assertThat(isSkipIfEmpty(Map.of(PROPERTY_SKIP_IF_EMPTY, "invalid")))
         .isEqualTo(DEFAULT_SKIP_IF_EMPTY);
+  }
+
+  @Test
+  void testSkipIfEmptyWithNullValue() {
     var properties = new HashMap<String, String>();
     properties.put(PROPERTY_SKIP_IF_EMPTY, null);
-    assertThat(skipIfEmpty(properties)).isEqualTo(DEFAULT_SKIP_IF_EMPTY);
+    assertThat(isSkipIfEmpty(properties)).isEqualTo(DEFAULT_SKIP_IF_EMPTY);
   }
 
   @Test
-  void testSeparator() {
-    assertThat(separator(Map.of())).isEqualTo(DEFAULT_SEPARATOR);
-    assertThat(separator(Map.of(PROPERTY_SEPARATOR, ", "))).isEqualTo(", ");
+  void testSeparatorWithEmptyProperties() {
+    assertThat(getSeparator(Map.of())).isEmpty();
+  }
+
+  @Test
+  void testSeparatorWithNonNullValue() {
+    assertThat(getSeparator(Map.of(PROPERTY_SEPARATOR, ", "))).isPresent().get().isEqualTo(", ");
+  }
+
+  @Test
+  void testSeparatorWithNullValue() {
     var properties = new HashMap<String, String>();
     properties.put(PROPERTY_SEPARATOR, null);
-    assertThat(separator(properties)).isEqualTo(DEFAULT_SEPARATOR);
+    assertThat(getSeparator(properties)).isEmpty();
   }
 }

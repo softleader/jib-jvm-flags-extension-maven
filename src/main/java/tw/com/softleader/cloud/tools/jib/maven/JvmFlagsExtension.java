@@ -20,61 +20,55 @@
  */
 package tw.com.softleader.cloud.tools.jib.maven;
 
+import static com.google.cloud.tools.jib.plugins.extension.ExtensionLogger.LogLevel.LIFECYCLE;
 import static com.google.common.base.Verify.verifyNotNull;
 import static java.lang.Boolean.FALSE;
-import static java.lang.String.format;
-import static java.lang.String.join;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.stream;
 import static java.util.Optional.ofNullable;
-import static java.util.function.Function.identity;
 
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.ContainerBuildPlan;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
-import com.google.cloud.tools.jib.api.buildplan.LayerObject;
 import com.google.cloud.tools.jib.maven.extension.JibMavenPluginExtension;
 import com.google.cloud.tools.jib.maven.extension.MavenData;
 import com.google.cloud.tools.jib.plugins.extension.ExtensionLogger;
-import com.google.cloud.tools.jib.plugins.extension.ExtensionLogger.LogLevel;
 import com.google.cloud.tools.jib.plugins.extension.JibPluginExtensionException;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
- * Jvm flag extension for Jib.
+ * JVM flags extension for Jib.
  *
  * @author Matt Ho
  */
 public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
 
-  public static final String CACHE_DIRECTORY_NAME = "jib-cache";
-  public static final String LAYER_JVM_FLAGS = "jvm flags";
-  public static final String JIB_JVM_FLAGS_FILE = "jib-jvm-flags-file";
   public static final String PROPERTY_SKIP_IF_EMPTY = "skipIfEmpty";
   public static final boolean DEFAULT_SKIP_IF_EMPTY = FALSE;
   public static final String PROPERTY_SEPARATOR = "separator";
-  public static final String DEFAULT_SEPARATOR = " ";
+  public static final String PROPERTY_FILENAME = "filename";
+  public static final String PROPERTY_MODE = "mode";
 
-  private AbsoluteUnixPath appRoot = AbsoluteUnixPath.get("/app");
-  private List<String> jvmFlags = Collections.emptyList();
-  private Path cacheDirectory =
-      Paths.get(System.getProperty("java.io.tmpdir"), CACHE_DIRECTORY_NAME);
+  static final String JIB_MAVEN_PLUGIN_ID = "com.google.cloud.tools:jib-maven-plugin";
+  private static final PluginConfigLocation JIB_APP_ROOT =
+      PluginConfigLocation.builder()
+          .pluginId(JIB_MAVEN_PLUGIN_ID)
+          .domPath("container")
+          .domPath("appRoot")
+          .build();
+  private static final PluginConfigLocation JIB_JVM_FLAGS =
+      PluginConfigLocation.builder()
+          .pluginId(JIB_MAVEN_PLUGIN_ID)
+          .domPath("container")
+          .domPath("jvmFlags")
+          .build();
 
   @Override
   public Optional<Class<Void>> getExtraConfigType() {
@@ -89,95 +83,64 @@ public class JvmFlagsExtension implements JibMavenPluginExtension<Void> {
       MavenData mavenData,
       ExtensionLogger logger)
       throws JibPluginExtensionException {
+    logger.log(LIFECYCLE, "Running JVM Flags Jib extension");
     try {
-      logger.log(LogLevel.LIFECYCLE, "Running JVM Flags Jib extension");
-      readJibConfigurations(mavenData.getMavenProject());
-      if (jvmFlags.isEmpty() && skipIfEmpty(properties)) {
-        logger.log(LogLevel.LIFECYCLE, "No JVM Flags are configured, skipping");
+      MavenProject project = mavenData.getMavenProject();
+      var jvmFlags = getJvmFlags(project);
+      if (jvmFlags.isEmpty() && isSkipIfEmpty(properties)) {
+        logger.log(LIFECYCLE, "No JVM Flags are configured, skipping");
         return buildPlan;
       }
-      var jvmFlagsJoined = join(separator(properties), jvmFlags);
-      logger.log(LogLevel.LIFECYCLE, format("JVM Flags set to [%s]", jvmFlagsJoined));
-      AbsoluteUnixPath fileInContainer = appRoot.resolve(JIB_JVM_FLAGS_FILE);
-      logger.log(
-          LogLevel.LIFECYCLE,
-          format("Adding layer containing '%s' file to the image", fileInContainer.toString()));
-      LayerObject layer = createJvmFlagsFilesLayer(cacheDirectory, jvmFlagsJoined, fileInContainer);
+      JvmFlagsLayerPlan.Builder plan =
+          JvmFlagsLayerPlan.builder()
+              .logger(logger)
+              .buildDir(Paths.get(project.getBuild().getDirectory()))
+              .jvmFlags(jvmFlags);
+      getSeparator(properties).ifPresent(plan::separator);
+      getFilename(properties).map(StringUtils::trimToNull).ifPresent(plan::filename);
+      getMode(properties).map(StringUtils::trimToNull).ifPresent(plan::mode);
+      FileEntriesLayer layer = plan.build().create(getAppRootPath(project));
       return buildPlan.toBuilder().addLayer(layer).build();
     } catch (IOException ex) {
       throw new JibPluginExtensionException(getClass(), verifyNotNull(ex.getMessage()), ex);
     }
   }
 
-  @VisibleForTesting
-  static String separator(@NonNull Map<String, String> properties) {
-    return getProperty(properties, PROPERTY_SEPARATOR, identity(), DEFAULT_SEPARATOR);
+  private AbsoluteUnixPath getAppRootPath(MavenProject project) {
+    return AbsoluteUnixPath.get(JIB_APP_ROOT.getValue(project).orElse("/app"));
   }
 
   @VisibleForTesting
-  static boolean skipIfEmpty(@NonNull Map<String, String> properties) {
-    return getProperty(
-        properties, PROPERTY_SKIP_IF_EMPTY, BooleanUtils::toBoolean, DEFAULT_SKIP_IF_EMPTY);
-  }
-
-  private static <T> T getProperty(
-      @NonNull Map<String, String> properties,
-      String key,
-      Function<String, T> downstream,
-      T defaultIfNull) {
-    return ofNullable(properties.get(key)).map(downstream).orElse(defaultIfNull);
-  }
-
-  /**
-   * @param sourceDirectory 來源目錄
-   * @param jvmFlags jvm flags 內容
-   * @param pathInContainer 要寫到 image 中檔案的路徑
-   */
-  @VisibleForTesting
-  static FileEntriesLayer createJvmFlagsFilesLayer(
-      Path sourceDirectory, String jvmFlags, AbsoluteUnixPath pathInContainer) throws IOException {
-    Path file = sourceDirectory.resolve(JIB_JVM_FLAGS_FILE);
-    writeFileConservatively(file, jvmFlags);
-    return FileEntriesLayer.builder()
-        .setName(LAYER_JVM_FLAGS)
-        .addEntry(file, pathInContainer)
-        .build();
+  static Optional<String> getMode(@NonNull Map<String, String> properties) {
+    return ofNullable(properties.get(PROPERTY_MODE)).filter(StringUtils::isNotBlank);
   }
 
   @VisibleForTesting
-  static void writeFileConservatively(Path file, String content) throws IOException {
-    if (Files.exists(file)) {
-      String oldContent = Files.readString(file);
-      if (oldContent.equals(content)) {
-        return;
-      }
-    }
-    Files.createDirectories(file.getParent());
-    Files.write(file, content.getBytes(UTF_8));
+  static Optional<String> getFilename(@NonNull Map<String, String> properties) {
+    return ofNullable(properties.get(PROPERTY_FILENAME)).filter(StringUtils::isNotBlank);
   }
 
-  private void readJibConfigurations(@NonNull MavenProject project) {
-    cacheDirectory = Paths.get(project.getBuild().getDirectory(), CACHE_DIRECTORY_NAME);
-    Plugin jibPlugin = project.getPlugin("com.google.cloud.tools:jib-maven-plugin");
-    if (jibPlugin != null) {
-      Xpp3Dom configurationDom = (Xpp3Dom) jibPlugin.getConfiguration();
-      if (configurationDom != null) {
-        Xpp3Dom containerDom = configurationDom.getChild("container");
-        if (containerDom != null) {
-          Xpp3Dom appRootDom = containerDom.getChild("appRoot");
-          if (appRootDom != null) {
-            appRoot = AbsoluteUnixPath.get(appRootDom.getValue());
-          }
-          Xpp3Dom jvmFlagsDom = containerDom.getChild("jvmFlags");
-          if (jvmFlagsDom != null) {
-            jvmFlags =
-                stream(jvmFlagsDom.getChildren())
+  @VisibleForTesting
+  static Optional<String> getSeparator(@NonNull Map<String, String> properties) {
+    return ofNullable(properties.get(PROPERTY_SEPARATOR));
+  }
+
+  @VisibleForTesting
+  static boolean isSkipIfEmpty(@NonNull Map<String, String> properties) {
+    return ofNullable(properties.get(PROPERTY_SKIP_IF_EMPTY))
+        .map(BooleanUtils::toBoolean)
+        .orElse(DEFAULT_SKIP_IF_EMPTY);
+  }
+
+  private List<String> getJvmFlags(MavenProject project) {
+    return JIB_JVM_FLAGS
+        .getDom(project)
+        .map(
+            dom ->
+                Arrays.stream(dom.getChildren())
                     .map(Xpp3Dom::getValue)
                     .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.toList());
-          }
-        }
-      }
-    }
+                    .collect(Collectors.toList()))
+        .orElseGet(Collections::emptyList);
   }
 }
