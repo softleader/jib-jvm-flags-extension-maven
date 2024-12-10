@@ -22,7 +22,7 @@ jobs:
       - run: echo '```' > /tmp/diff.md && git diff >> /tmp/diff.md && echo '```' >> /tmp/diff.md 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore(deps): bump dependencies"
           title: "chore(deps): bump dependencies"
