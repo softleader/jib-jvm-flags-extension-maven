@@ -30,7 +30,7 @@ jobs:
           author: bot <bot-noreply@softleader.com.tw>
           body-path: /tmp/diff.md
           labels: "dependencies-update"
-          branch: "${{ github.ref_name }}/bump-deps/${{ github.run_id }}"
+          branch: "bump-deps/${{ github.ref_name }}/${{ github.run_id }}"
           delete-branch: true
       - name: Enable Auto-merge
         if: steps.cpr.outputs.pull-request-operation == 'created'
