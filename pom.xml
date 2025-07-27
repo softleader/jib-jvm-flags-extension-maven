@@ -54,7 +54,7 @@
 
     <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
-    <spotless-maven-plugin.version>2.45.0</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>2.46.1</spotless-maven-plugin.version>
     <license-maven-plugin.version>5.0.0</license-maven-plugin.version>
     <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
     <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
@@ -63,7 +63,7 @@
 
     <jib-maven-plugin-extension-api.version>0.4.0</jib-maven-plugin-extension-api.version>
     <assertj-core.version>3.27.3</assertj-core.version>
-    <junit-jupiter.version>5.13.3</junit-jupiter.version>
+    <junit-jupiter.version>5.13.4</junit-jupiter.version>
     <mockito.version>5.18.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <lombok.version>1.18.38</lombok.version>
