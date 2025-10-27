@@ -24,7 +24,7 @@ jobs:
         run: |
           git diff > /tmp/diff.log
           echo "sha=$(cat /tmp/diff.log | sha256sum | head -c 12)" >> $GITHUB_OUTPUT
-          echo '```' > /tmp/diff.md
+          echo '```diff' > /tmp/diff.md
           cat /tmp/diff.log >> /tmp/diff.md
           echo '```' >> /tmp/diff.md
       - name: Create Pull Request
